@@ -2,7 +2,7 @@
 <html>
 
 <head>
-    <title>Avatar Shirt Try-On</title>
+    <title>Avatar Cloths Try-On</title>
     <style>
         * {
             margin: 0;
@@ -18,68 +18,105 @@
 
         #ui {
             position: fixed;
-            bottom: 30px;
+            bottom: 24px;
             left: 50%;
             transform: translateX(-50%);
             display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 12px;
+            flex-direction: row;
+            align-items: flex-end;
+            gap: 16px;
             z-index: 10;
         }
 
-        #upload-btn {
-            padding: 12px 28px;
-            background: #4f8ef7;
+        .slot {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 12px 16px;
+        }
+
+        .slot-label {
+            color: #888;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .upload-btn {
+            padding: 10px 22px;
             color: white;
             border: none;
             border-radius: 8px;
-            font-size: 15px;
+            font-size: 14px;
             cursor: pointer;
-            box-shadow: 0 4px 15px rgba(79, 142, 247, 0.4);
             transition: background 0.2s;
+            white-space: nowrap;
         }
 
-        #upload-btn:hover {
+        #shirt-upload-btn {
+            background: #4f8ef7;
+            box-shadow: 0 4px 14px rgba(79, 142, 247, 0.35);
+        }
+
+        #shirt-upload-btn:hover {
             background: #2d6ee0;
         }
 
-        #file-input {
+        #pant-upload-btn {
+            background: #7c5cbf;
+            box-shadow: 0 4px 14px rgba(124, 92, 191, 0.35);
+        }
+
+        #pant-upload-btn:hover {
+            background: #5e3fa3;
+        }
+
+        .file-input {
             display: none;
         }
 
-        #preview-box {
+        .preview-box {
             display: none;
             align-items: center;
-            gap: 10px;
-            background: rgba(255, 255, 255, 0.08);
-            border-radius: 8px;
-            padding: 8px 14px;
+            gap: 8px;
             color: #ccc;
-            font-size: 13px;
+            font-size: 12px;
+            max-width: 160px;
         }
 
-        #preview-img {
-            width: 48px;
-            height: 48px;
+        .preview-box img {
+            width: 40px;
+            height: 40px;
             object-fit: cover;
             border-radius: 4px;
             border: 1px solid #555;
+            flex-shrink: 0;
         }
 
-        #reset-btn {
+        .preview-name {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .reset-btn {
             display: none;
-            padding: 7px 18px;
+            padding: 5px 14px;
             background: transparent;
-            color: #aaa;
-            border: 1px solid #555;
+            color: #888;
+            border: 1px solid #444;
             border-radius: 6px;
-            font-size: 13px;
+            font-size: 12px;
             cursor: pointer;
         }
 
-        #reset-btn:hover {
+        .reset-btn:hover {
             background: rgba(255, 255, 255, 0.05);
+            color: #ccc;
         }
 
         #status {
@@ -92,6 +129,7 @@
             background: rgba(0, 0, 0, 0.5);
             padding: 6px 16px;
             border-radius: 20px;
+            pointer-events: none;
         }
     </style>
 </head>
@@ -100,13 +138,29 @@
     <div id="status">Loading avatar...</div>
 
     <div id="ui">
-        <div id="preview-box">
-            <img id="preview-img" src="" alt="shirt" />
-            <span id="preview-name">shirt.png</span>
+
+        <div class="slot">
+            <span class="slot-label">👕 Shirt</span>
+            <div class="preview-box" id="shirt-preview-box">
+                <img id="shirt-preview-img" src="" alt="shirt" />
+                <span class="preview-name" id="shirt-preview-name"></span>
+            </div>
+            <button class="upload-btn" id="shirt-upload-btn">Upload Shirt</button>
+            <input class="file-input" type="file" id="shirt-file-input" accept="image/*" />
+            <button class="reset-btn" id="shirt-reset-btn">Reset Shirt</button>
         </div>
-        <button id="upload-btn">Upload Shirt Image</button>
-        <input type="file" id="file-input" accept="image/*" />
-        <button id="reset-btn">Reset Shirt</button>
+
+        <div class="slot">
+            <span class="slot-label">👖 Pant</span>
+            <div class="preview-box" id="pant-preview-box">
+                <img id="pant-preview-img" src="" alt="pant" />
+                <span class="preview-name" id="pant-preview-name"></span>
+            </div>
+            <button class="upload-btn" id="pant-upload-btn">Upload Pant</button>
+            <input class="file-input" type="file" id="pant-file-input" accept="image/*" />
+            <button class="reset-btn" id="pant-reset-btn">Reset Pant</button>
+        </div>
+
     </div>
 
     <script type="importmap">
@@ -123,7 +177,6 @@
         import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
         import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
-        // ── Scene ────────────────────────────────────────────────────────────
         const scene = new THREE.Scene();
         scene.background = new THREE.Color(0x111122);
 
@@ -140,51 +193,51 @@
         controls.enableDamping = true;
         controls.target.set(0, 1, 0);
 
-        // Lights
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
-        scene.add(ambientLight);
-
+        scene.add(new THREE.AmbientLight(0xffffff, 0.6));
         const dirLight = new THREE.DirectionalLight(0xffffff, 1.2);
         dirLight.position.set(1, 2, 2);
         scene.add(dirLight);
-
         const fillLight = new THREE.DirectionalLight(0x8899ff, 0.4);
         fillLight.position.set(-1, 0.5, -1);
         scene.add(fillLight);
 
-        // ── Avatar ───────────────────────────────────────────────────────────
         const statusEl = document.getElementById('status');
+
         let shirtMeshes = [];
-        let originalMats = {};
+        let shirtOrigMat = {};
+        let pantMeshes = [];
+        let pantOrigMat = {};
 
         const loader = new GLTFLoader();
-        loader.load(`https://models.readyplayer.me/664777277ad2faec5b6079f0.glb`, (gltf) => {
-            scene.add(gltf.scene);
-            gltf.scene.traverse((node) => {
-                if (!node.isMesh) return;
-                if (node.name === 'Wolf3D_Outfit_Top') {
-                    shirtMeshes.push(node);
+        loader.load(
+            `https://models.readyplayer.me/664777277ad2faec5b6079f0.glb`,
+            (gltf) => {
+                scene.add(gltf.scene);
+                gltf.scene.traverse((node) => {
+                    if (!node.isMesh) return;
 
-                    // Clone material so we can restore it later
-                    originalMats[node.uuid] = Array.isArray(node.material) ? node.material.map(m => m.clone()) : node.material.clone();
-                }
-            });
-            statusEl.textContent = 'Avatar ready — upload a shirt!';
-        },
+                    if (node.name === 'Wolf3D_Outfit_Top') {
+                        shirtMeshes.push(node);
+                        shirtOrigMat[node.uuid] = Array.isArray(node.material)
+                            ? node.material.map(m => m.clone())
+                            : node.material.clone();
+                    }
+                    if (node.name === 'Wolf3D_Outfit_Bottom') {
+                        pantMeshes.push(node);
+                        pantOrigMat[node.uuid] = Array.isArray(node.material)
+                            ? node.material.map(m => m.clone())
+                            : node.material.clone();
+                    }
+                });
+                statusEl.textContent = 'Avatar ready — upload a shirt or pant!';
+            },
             (xhr) => {
                 statusEl.textContent = `Loading… ${Math.round(xhr.loaded / xhr.total * 100)}%`;
             },
             () => { statusEl.textContent = 'Failed to load avatar'; }
         );
 
-        // ── Image Processing ─────────────────────────────────────────────────
-        /**
-         * 1. Draws the shirt onto a canvas
-         * 2. Finds the tight bounding box of non-background pixels
-         * 3. Crops to that box and makes near-white pixels transparent
-         * Returns: { dataUrl, width, height }
-         */
-        function processShirtImage(url) {
+        function processImage(url) {
             return new Promise((resolve) => {
                 const img = new Image();
                 img.crossOrigin = 'anonymous';
@@ -197,125 +250,96 @@
                     const raw = tctx.getImageData(0, 0, w, h);
                     const d = raw.data;
 
-                    // ── Step 1: find tight content bbox ──
                     let x0 = w, x1 = 0, y0 = h, y1 = 0;
                     for (let y = 0; y < h; y++) {
                         for (let x = 0; x < w; x++) {
                             const i = (y * w + x) * 4;
                             const br = (d[i] + d[i + 1] + d[i + 2]) / 3;
-                            if (d[i + 3] > 20 && br < 240) {   // non-transparent, non-white
-                                if (x < x0) x0 = x;
-                                if (x > x1) x1 = x;
-                                if (y < y0) y0 = y;
-                                if (y > y1) y1 = y;
+                            if (d[i + 3] > 20 && br < 240) {
+                                if (x < x0) x0 = x; if (x > x1) x1 = x;
+                                if (y < y0) y0 = y; if (y > y1) y1 = y;
                             }
                         }
                     }
-
                     const pad = 6;
-                    x0 = Math.max(0, x0 - pad);
-                    y0 = Math.max(0, y0 - pad);
-                    x1 = Math.min(w - 1, x1 + pad);
-                    y1 = Math.min(h - 1, y1 + pad);
+                    x0 = Math.max(0, x0 - pad); y0 = Math.max(0, y0 - pad);
+                    x1 = Math.min(w - 1, x1 + pad); y1 = Math.min(h - 1, y1 + pad);
                     const cw = x1 - x0, ch = y1 - y0;
 
-                    // ── Step 2: crop onto output canvas ──
                     const out = document.createElement('canvas');
-                    out.width = cw;
-                    out.height = ch;
+                    out.width = cw; out.height = ch;
                     const octx = out.getContext('2d');
                     octx.drawImage(tmp, x0, y0, cw, ch, 0, 0, cw, ch);
 
-                    // ── Step 3: flood-fill background removal + dominant colour ──
                     const od = octx.getImageData(0, 0, cw, ch);
                     const px = od.data;
 
-                    // Helper: is pixel at flat index idx "background-like"?
-                    // Only marks near-white/near-grey OR already transparent pixels
                     const isBg = (idx) => {
                         const a = px[idx * 4 + 3];
-                        if (a < 20) return true;                         // transparent
-                        const r = px[idx*4], g = px[idx*4+1], b = px[idx*4+2];
+                        if (a < 20) return true;
+                        const r = px[idx * 4], g = px[idx * 4 + 1], b = px[idx * 4 + 2];
                         const br = (r + g + b) / 3;
-                        return br > 230 && Math.max(Math.abs(r-g), Math.abs(g-b), Math.abs(r-b)) < 20;
+                        return br > 230 && Math.max(Math.abs(r - g), Math.abs(g - b), Math.abs(r - b)) < 20;
                     };
 
-                    // BFS flood-fill from every edge pixel that looks like background
                     const visited = new Uint8Array(cw * ch);
-                    const queue   = [];
-
+                    const queue = [];
                     const enqueue = (idx) => {
-                        if (idx < 0 || idx >= cw * ch) return;
-                        if (visited[idx]) return;
-                        if (!isBg(idx)) return;
+                        if (idx < 0 || idx >= cw * ch || visited[idx] || !isBg(idx)) return;
                         visited[idx] = 1;
                         queue.push(idx);
                     };
 
-                    for (let x = 0; x < cw; x++) { enqueue(x); enqueue((ch-1)*cw + x); }
-                    for (let y = 1; y < ch-1; y++) { enqueue(y*cw); enqueue(y*cw + cw-1); }
+                    for (let x = 0; x < cw; x++) { enqueue(x); enqueue((ch - 1) * cw + x); }
+                    for (let y = 1; y < ch - 1; y++) { enqueue(y * cw); enqueue(y * cw + cw - 1); }
 
                     while (queue.length > 0) {
                         const idx = queue.pop();
-                        px[idx*4+3] = 0;          // erase this background pixel
+                        px[idx * 4 + 3] = 0;
                         const x = idx % cw, y = Math.floor(idx / cw);
-                        if (x > 0)    enqueue(idx - 1);
-                        if (x < cw-1) enqueue(idx + 1);
-                        if (y > 0)    enqueue(idx - cw);
-                        if (y < ch-1) enqueue(idx + cw);
+                        if (x > 0) enqueue(idx - 1);
+                        if (x < cw - 1) enqueue(idx + 1);
+                        if (y > 0) enqueue(idx - cw);
+                        if (y < ch - 1) enqueue(idx + cw);
                     }
                     octx.putImageData(od, 0, 0);
 
-                    // Dominant colour from remaining (shirt) pixels via colour bucketing
                     const buckets = {};
                     const STEP = 32;
                     for (let i = 0; i < px.length; i += 4) {
-                        if (px[i+3] < 20) continue;       // skip erased bg pixels
-                        const r = px[i], g = px[i+1], b = px[i+2];
-                        const key = `${Math.floor(r/STEP)}_${Math.floor(g/STEP)}_${Math.floor(b/STEP)}`;
-                        if (!buckets[key]) buckets[key] = { r:0, g:0, b:0, n:0 };
+                        if (px[i + 3] < 20) continue;
+                        const r = px[i], g = px[i + 1], b = px[i + 2];
+                        const key = `${Math.floor(r / STEP)}_${Math.floor(g / STEP)}_${Math.floor(b / STEP)}`;
+                        if (!buckets[key]) buckets[key] = { r: 0, g: 0, b: 0, n: 0 };
                         buckets[key].r += r; buckets[key].g += g;
                         buckets[key].b += b; buckets[key].n++;
                     }
                     let best = null;
-                    for (const key in buckets) {
-                        if (!best || buckets[key].n > best.n) best = buckets[key];
+                    for (const k in buckets) {
+                        if (!best || buckets[k].n > best.n) best = buckets[k];
                     }
-                    const avgColor = best
-                        ? new THREE.Color(best.r/best.n/255, best.g/best.n/255, best.b/best.n/255)
+                    const dominantColor = best
+                        ? new THREE.Color(best.r / best.n / 255, best.g / best.n / 255, best.b / best.n / 255)
                         : new THREE.Color(0.4, 0.4, 0.4);
 
-                    resolve({ dataUrl: out.toDataURL('image/png'), width: cw, height: ch, avgColor });
+                    resolve({ dataUrl: out.toDataURL('image/png'), width: cw, height: ch, dominantColor });
                 };
                 img.src = url;
             });
         }
 
-        // ── Shader Material ──────────────────────────────────────────────────
-        /**
-         * Builds a ShaderMaterial that:
-         *  • Projects the shirt image onto the mesh using world-space XY (front-facing planar map)
-         *  • Preserves aspect ratio by letterboxing / pillarboxing
-         *  • Discards transparent pixels so the original body shows through (collar, etc.)
-         *  • Applies simple diffuse + ambient lighting so it looks 3D
-         */
-        function buildShirtMaterial(texture, texW, texH, mesh) {
-            // World-space bounding box for the shirt mesh
+        function buildMaterial(texture, texW, texH, mesh) {
             const bbox = new THREE.Box3().setFromObject(mesh);
             const meshW = bbox.max.x - bbox.min.x;
             const meshH = bbox.max.y - bbox.min.y;
-
             const meshAR = meshW / meshH;
             const texAR = texW / texH;
 
-            // Keep texture aspect ratio: scale UV so the image fits inside the mesh bbox
             let scaleU = 1, scaleV = 1, offsetU = 0, offsetV = 0;
             if (texAR > meshAR) {
-                // Texture wider than mesh → fit to width, centre vertically
                 scaleV = meshAR / texAR;
                 offsetV = (1 - scaleV) / 2;
             } else {
-                // Texture taller than mesh → fit to height, centre horizontally
                 scaleU = texAR / meshAR;
                 offsetU = (1 - scaleU) / 2;
             }
@@ -327,17 +351,14 @@
                     bboxMax: { value: new THREE.Vector2(bbox.max.x, bbox.max.y) },
                     uvScale: { value: new THREE.Vector2(scaleU, scaleV) },
                     uvOffset: { value: new THREE.Vector2(offsetU, offsetV) },
-                    // Lighting uniforms (matched to the scene lights above)
                     lightDir: { value: new THREE.Vector3(1, 2, 2).normalize() },
                     fillDir: { value: new THREE.Vector3(-1, 0.5, -1).normalize() },
                     lightColor: { value: new THREE.Color(1.0, 1.0, 1.0) },
                     fillColor: { value: new THREE.Color(0.53, 0.6, 1.0) },
                     ambientCol: { value: new THREE.Color(0.35, 0.35, 0.4) },
-                    // Fallback colour for mesh areas outside the texture projection
-                    fallbackColor: { value: mesh.userData.avgColor || new THREE.Color(0.4, 0.4, 0.4) },
+                    fallbackColor: { value: mesh.userData.dominantColor || new THREE.Color(0.4, 0.4, 0.4) },
                 },
-
-                vertexShader: /* glsl */`
+                vertexShader: `
                     uniform vec2 bboxMin;
                     uniform vec2 bboxMax;
                     uniform vec2 uvScale;
@@ -348,25 +369,15 @@
                     varying float vFrontFace;
 
                     void main() {
-                        // World position → planar UV
                         vec4 worldPos = modelMatrix * vec4(position, 1.0);
                         vec2 raw = (worldPos.xy - bboxMin) / (bboxMax - bboxMin);
-
-                        // Apply aspect-ratio correction
-                        // No manual Y-flip — Three.js flipY=true already handles it
                         vUV = raw * uvScale + uvOffset;
-
-                        // World-space normal for lighting
                         vWorldNormal = normalize(mat3(modelMatrix) * normal);
-
-                        // Whether this vertex faces the camera (front of shirt)
-                        vFrontFace = step(0.0, dot(vWorldNormal, vec3(0.0, 0.0, 1.0)));
-
-                        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+                        vFrontFace   = step(0.0, dot(vWorldNormal, vec3(0.0, 0.0, 1.0)));
+                        gl_Position  = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
                     }
                 `,
-
-                fragmentShader: /* glsl */`
+                fragmentShader: `
                     uniform sampler2D map;
                     uniform vec3  lightDir;
                     uniform vec3  fillDir;
@@ -380,96 +391,105 @@
                     varying float vFrontFace;
 
                     void main() {
-                        // Clamp UV — keeps collar/sleeve edges solid instead of transparent
-                        vec2 uv = clamp(vUV, 0.0, 1.0);
+                        vec2 uv       = clamp(vUV, 0.0, 1.0);
                         vec4 texColor = texture2D(map, uv);
-
-                        // Use fallback colour for transparent pixels (removed bg, out-of-bounds edges)
                         vec3 baseColor = (texColor.a < 0.4) ? fallbackColor : texColor.rgb;
 
-                        // ── Lighting (Lambertian diffuse + ambient) ──
                         vec3 n = normalize(vWorldNormal);
-
                         float diff     = max(dot(n, lightDir), 0.0);
                         float fillDiff = max(dot(n, fillDir),  0.0) * 0.4;
-
-                        vec3 lighting = ambientCol
-                                      + lightColor * diff
-                                      + fillColor  * fillDiff;
-
-                        // Slightly darken back faces so depth reads correctly
-                        lighting *= mix(0.55, 1.0, vFrontFace);
+                        vec3 lighting  = ambientCol + lightColor * diff + fillColor * fillDiff;
+                        lighting      *= mix(0.55, 1.0, vFrontFace);
 
                         gl_FragColor = vec4(baseColor * lighting, 1.0);
                     }
                 `,
-
                 transparent: true,
-                side: THREE.DoubleSide,   // render inside too (collar interior etc.)
+                side: THREE.DoubleSide,
             });
         }
 
-        // ── Apply / Reset ────────────────────────────────────────────────────
-        function applyShirtTexture(texture, texW, texH, avgColor) {
+        function applyTexture(meshes, texture, texW, texH, dominantColor) {
             texture.needsUpdate = true;
-            shirtMeshes.forEach((mesh) => {
-                mesh.userData.avgColor = avgColor;   // passed into shader as fallback
-                mesh.material = buildShirtMaterial(texture, texW, texH, mesh);
+            meshes.forEach((mesh) => {
+                mesh.userData.dominantColor = dominantColor;
+                mesh.material = buildMaterial(texture, texW, texH, mesh);
             });
         }
 
-        function resetShirt() {
-            shirtMeshes.forEach((mesh) => {
-                const orig = originalMats[mesh.uuid];
-                mesh.material = Array.isArray(orig)
-                    ? orig.map(m => m.clone())
-                    : orig.clone();
+        function resetMeshes(meshes, origMats) {
+            meshes.forEach((mesh) => {
+                const orig = origMats[mesh.uuid];
+                mesh.material = Array.isArray(orig) ? orig.map(m => m.clone()) : orig.clone();
             });
         }
 
-        // ── UI Wiring ────────────────────────────────────────────────────────
-        const uploadBtn = document.getElementById('upload-btn');
-        const fileInput = document.getElementById('file-input');
-        const previewBox = document.getElementById('preview-box');
-        const previewImg = document.getElementById('preview-img');
-        const previewName = document.getElementById('preview-name');
-        const resetBtn = document.getElementById('reset-btn');
+        function wireUpSlot({ meshesRef, uploadBtnId, fileInputId,
+            previewBoxId, previewImgId, previewNameId,
+            resetBtnId, origMats, label }) {
+            const uploadBtn = document.getElementById(uploadBtnId);
+            const fileInput = document.getElementById(fileInputId);
+            const previewBox = document.getElementById(previewBoxId);
+            const previewImg = document.getElementById(previewImgId);
+            const previewName = document.getElementById(previewNameId);
+            const resetBtn = document.getElementById(resetBtnId);
 
-        uploadBtn.addEventListener('click', () => fileInput.click());
+            uploadBtn.addEventListener('click', () => fileInput.click());
 
-        fileInput.addEventListener('change', async (e) => {
-            const file = e.target.files[0];
-            if (!file) return;
+            fileInput.addEventListener('change', async (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
 
-            const objectURL = URL.createObjectURL(file);
-            previewImg.src = objectURL;
-            previewName.textContent = file.name;
-            previewBox.style.display = 'flex';
-            resetBtn.style.display = 'block';
-            statusEl.textContent = 'Processing shirt…';
+                const objectURL = URL.createObjectURL(file);
+                previewImg.src = objectURL;
+                previewName.textContent = file.name;
+                previewBox.style.display = 'flex';
+                resetBtn.style.display = 'block';
+                statusEl.textContent = `Processing ${label}…`;
 
-            // 1. Crop + remove white background + compute avg colour
-            const { dataUrl, width, height, avgColor } = await processShirtImage(objectURL);
-            console.log("🚀 ~ avgColor:", avgColor)
+                const { dataUrl, width, height, dominantColor } = await processImage(objectURL);
 
-            // 2. Load the processed image as a Three.js texture
-            statusEl.textContent = 'Applying shirt…';
-            const texture = new THREE.TextureLoader().load(dataUrl, () => {
-                applyShirtTexture(texture, width, height, avgColor);
-                statusEl.textContent = 'Shirt applied!';
+                statusEl.textContent = `Applying ${label}…`;
+                const texture = new THREE.TextureLoader().load(dataUrl, () => {
+                    applyTexture(meshesRef(), texture, width, height, dominantColor);
+                    statusEl.textContent = `${label} applied!`;
+                });
             });
+
+            resetBtn.addEventListener('click', () => {
+                resetMeshes(meshesRef(), origMats);
+                previewBox.style.display = 'none';
+                resetBtn.style.display = 'none';
+                previewImg.src = '';
+                fileInput.value = '';
+                statusEl.textContent = `${label} reset`;
+            });
+        }
+
+        wireUpSlot({
+            meshesRef: () => shirtMeshes,
+            uploadBtnId: 'shirt-upload-btn',
+            fileInputId: 'shirt-file-input',
+            previewBoxId: 'shirt-preview-box',
+            previewImgId: 'shirt-preview-img',
+            previewNameId: 'shirt-preview-name',
+            resetBtnId: 'shirt-reset-btn',
+            origMats: shirtOrigMat,
+            label: 'Shirt',
         });
 
-        resetBtn.addEventListener('click', () => {
-            resetShirt();
-            previewBox.style.display = 'none';
-            resetBtn.style.display = 'none';
-            previewImg.src = '';
-            fileInput.value = '';
-            statusEl.textContent = 'Shirt reset — upload a new one below';
+        wireUpSlot({
+            meshesRef: () => pantMeshes,
+            uploadBtnId: 'pant-upload-btn',
+            fileInputId: 'pant-file-input',
+            previewBoxId: 'pant-preview-box',
+            previewImgId: 'pant-preview-img',
+            previewNameId: 'pant-preview-name',
+            resetBtnId: 'pant-reset-btn',
+            origMats: pantOrigMat,
+            label: 'Pant',
         });
 
-        // ── Render Loop ──────────────────────────────────────────────────────
         (function animate() {
             requestAnimationFrame(animate);
             controls.update();
