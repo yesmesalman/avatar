@@ -186,18 +186,46 @@
             previewBox.style.display = 'flex';
             resetBtn.style.display = 'block';
 
-            // Create Three.js texture from the uploaded image
-            const texture = new THREE.TextureLoader().load(objectURL, () => {
-                applyShirtTexture(texture);
-                statusEl.textContent = 'Shirt applied!';
+            // Extract dominant color from the image and apply it
+            getDominantColor(objectURL, (color) => {
+                applyShirtColor(color);
+                statusEl.textContent = 'Shirt color applied!';
             });
         });
 
-        function applyShirtTexture(texture) {
-            texture.flipY = false; // GLB models need this
+        function getDominantColor(imageUrl, callback) {
+            const img = new Image();
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                canvas.width = img.width;
+                canvas.height = img.height;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0);
+
+                const data = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+                let r = 0, g = 0, b = 0, count = 0;
+
+                for (let i = 0; i < data.length; i += 4) {
+                    const alpha = data[i + 3];
+                    const brightness = (data[i] + data[i + 1] + data[i + 2]) / 3;
+                    // Skip transparent or near-white pixels (background)
+                    if (alpha < 128 || brightness > 230) continue;
+                    r += data[i];
+                    g += data[i + 1];
+                    b += data[i + 2];
+                    count++;
+                }
+
+                if (count === 0) { callback(new THREE.Color(0x000000)); return; }
+                callback(new THREE.Color(r / count / 255, g / count / 255, b / count / 255));
+            };
+            img.src = imageUrl;
+        }
+
+        function applyShirtColor(color) {
             shirtMeshes.forEach((mesh) => {
                 mesh.material = new THREE.MeshStandardMaterial({
-                    map: texture,
+                    color: color,
                     roughness: 0.8,
                     metalness: 0.0,
                 });
